@@ -65,6 +65,7 @@ resource "aws_subnet" "sw_az2" {
   vpc_id            = aws_vpc.simple_web.id
   cidr_block        = "10.0.1.0/24"
   availability_zone = "us-east-2b"
+
   tags = {
     networking = "terraform"
   }
@@ -114,63 +115,15 @@ resource "aws_security_group" "simple_web" {
 
 }
 
-resource "aws_elb" "simple_web" {
-  name            = "simple-web"
-  subnets         = [aws_subnet.sw_az1.id, aws_subnet.sw_az2.id, aws_subnet.sw_az3.id]
-  security_groups = [aws_security_group.simple_web.id]
+module "web_app" {
+  source = "./modules/web_app"
 
-  health_check {
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-    timeout             = 5
-    target              = "TCP:80"
-    interval            = 30
-  }
-
-  listener {
-    instance_port     = 80
-    instance_protocol = "http"
-    lb_port           = 80
-    lb_protocol       = "http"
-  }
-
-  tags = {
-    load_balancing = "terraform"
-  }
-
+  web_instance_type     = var.web_instance_type
+  web_image_id          = var.web_image_id
+  web_desired_capacity  = var.web_desired_capacity
+  web_max_size          = var.web_max_size
+  web_min_size          = var.web_min_size
+  subnets               = [aws_subnet.sw_az1.id,aws_subnet.sw_az2.id,aws_subnet.sw_az3.id]
+  security_groups       = [aws_security_group.simple_web.id]
+  web_app               = var.web_app
 }
-
-resource "aws_launch_template" "simple_web" {
-  name_prefix   = "simple-web"
-  image_id      = var.web_image_id
-  instance_type = var.web_instance_type
-
-  tags = {
-    auto_scaling = "terraform"
-  }
-}
-
-resource "aws_autoscaling_group" "simple_web" {
-  vpc_zone_identifier = [aws_subnet.sw_az1.id, aws_subnet.sw_az2.id, aws_subnet.sw_az3.id]
-  desired_capacity    = var.web_desired_capacity
-  max_size            = var.web_max_size
-  min_size            = var.web_min_size
-
-  launch_template {
-    id      = aws_launch_template.simple_web.id
-    version = "$Latest"
-  }
-
-  tag {
-    key 		= "auto_scaling"
-    value 		= "terraform"
-    propagate_at_launch = true
-  }
-
-}
-
-resource "aws_autoscaling_attachment" "simple_web" {
-  autoscaling_group_name = aws_autoscaling_group.simple_web.id
-  elb                    = aws_elb.simple_web.id
-}
-
