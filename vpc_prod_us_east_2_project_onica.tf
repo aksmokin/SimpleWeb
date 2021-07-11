@@ -3,6 +3,34 @@ an Onica AWS account and plan out initial design
 considerations for a virtual private cloud.
  */
 
+variable "whitelist" {
+  type = list(string)
+}
+
+variable "web_instance_type" {
+  type = string
+}
+
+variable "web_image_id" {
+  type = string
+}
+
+variable "web_desired_capacity" {
+  type = number
+}
+
+variable "web_max_size" {
+  type = number
+}
+
+variable "web_min_size" {
+  type = number
+}
+
+variable "web_app" {
+  type = string
+}
+
 provider "aws" {
   profile                       = "default"
   shared_credentials_file       = "/Users/jgray/terraform/onica/.aws/credentials"
@@ -70,7 +98,7 @@ resource "aws_security_group" "simple_web" {
     from_port 	= 80
     to_port   	= 80
     protocol  	= "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = var.whitelist
   }
 
   egress {
@@ -114,8 +142,8 @@ resource "aws_elb" "simple_web" {
 
 resource "aws_launch_template" "simple_web" {
   name_prefix   = "simple-web"
-  image_id      = "ami-0fd02a3bc174c9398"
-  instance_type = "t2.micro"
+  image_id      = var.web_image_id
+  instance_type = var.web_instance_type
 
   tags = {
     auto_scaling = "terraform"
@@ -124,9 +152,9 @@ resource "aws_launch_template" "simple_web" {
 
 resource "aws_autoscaling_group" "simple_web" {
   vpc_zone_identifier = [aws_subnet.sw_az1.id, aws_subnet.sw_az2.id, aws_subnet.sw_az3.id]
-  desired_capacity    = 2
-  max_size            = 3
-  min_size            = 1
+  desired_capacity    = var.web_desired_capacity
+  max_size            = var.web_max_size
+  min_size            = var.web_min_size
 
   launch_template {
     id      = aws_launch_template.simple_web.id
