@@ -9,4 +9,5 @@ whitelist 		= ["0.0.0.0/0"]
 web_desired_capacity   	= 2
 web_max_size           	= 3
 web_min_size           	= 1
+web_target_value        = 70
 web_app 		= "SimpleWeb"

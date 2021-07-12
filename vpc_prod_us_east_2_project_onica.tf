@@ -4,31 +4,43 @@ considerations for a virtual private cloud.
  */
 
 variable "whitelist" {
-  type = list(string)
+  type        = list(string)
+  description = "List of CIDR blocks whitelisted by security group ingress rules."
 }
 
 variable "web_instance_type" {
-  type = string
+  type        = string
+  description = "The type of the instance."
 }
 
 variable "web_image_id" {
-  type = string
+  type        = string
+  description = "The id of the machine image (AMI) to use for the website's server."
 }
 
 variable "web_desired_capacity" {
-  type = number
+  type        = number
+  description = "The number of Amazon EC2 instances that should be running in the website's Auto Scaling Group."
 }
 
 variable "web_max_size" {
-  type = number
+  type        = number
+  description = "The maximum size of the website's Auto Scaling Group."
 }
 
 variable "web_min_size" {
-  type = number
+  type        = number
+  description = "The minimum size of the website's Auto Scaling Group."
+}
+
+variable "web_target_value" {
+  type        = number
+  description = "The target value for a scaling metric."
 }
 
 variable "web_app" {
-  type = string
+  type        = string
+  description = "The name of this website."
 }
 
 provider "aws" {
@@ -90,6 +102,26 @@ resource "aws_route_table" "sw_routes" {
      }
  }
 
+resource "aws_main_route_table_association" "sw_mrta" {
+  vpc_id         = aws_vpc.simple_web.id
+  route_table_id = aws_route_table.sw_routes.id
+}
+
+resource "aws_route_table_association" "sw_rta1" {
+  subnet_id      = aws_subnet.sw_az1.id
+  route_table_id = aws_route_table.sw_routes.id
+}
+
+resource "aws_route_table_association" "sw_rta2" {
+  subnet_id      = aws_subnet.sw_az2.id
+  route_table_id = aws_route_table.sw_routes.id
+}
+
+resource "aws_route_table_association" "sw_rta3" {
+  subnet_id      = aws_subnet.sw_az3.id
+  route_table_id = aws_route_table.sw_routes.id
+}
+
 resource "aws_security_group" "simple_web" {
   name 		= "simple_web"
   vpc_id        = aws_vpc.simple_web.id
@@ -123,6 +155,7 @@ module "web_app" {
   web_desired_capacity  = var.web_desired_capacity
   web_max_size          = var.web_max_size
   web_min_size          = var.web_min_size
+  web_target_value      = var.web_target_value
   subnets               = [aws_subnet.sw_az1.id,aws_subnet.sw_az2.id,aws_subnet.sw_az3.id]
   security_groups       = [aws_security_group.simple_web.id]
   web_app               = var.web_app
