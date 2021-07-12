@@ -1,4 +1,3 @@
-
 /* This is a data file containing abstracted IaaC
 that works better in variable format.
  */
